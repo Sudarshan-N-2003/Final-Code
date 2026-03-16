@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QPDS - Question Paper Design System | VTU</title>
+<style>
+  :root {
+    --primary: #1a237e;
+    --primary-light: #3949ab;
+    --primary-dark: #0d1757;
+    --accent: #e65100;
+    --accent-light: #ff6d00;
+    --success: #1b5e20;
+    --success-light: #2e7d32;
+    --warning: #f57f17;
+    --danger: #b71c1c;
+    --bg: #f0f2f7;
+    --card: #ffffff;
+    --border: #dde1f0;
+    --text: #1a1a2e;
+    --text-muted: #5c6284;
+    --text-light: #8890b5;
+    --sidebar-w: 260px;
+    --header-h: 64px;
+    --shadow: 0 2px 12px rgba(26,35,126,0.08);
+    --shadow-md: 0 4px 24px rgba(26,35,126,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  
+  /* ===== AUTH ===== */
+  #auth-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #0d1757 0%, #1a237e 50%, #283593 100%);
+    position: relative; overflow: hidden;
+  }
+  #auth-screen::before {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(255,109,0,0.08) 0%, transparent 60%),
+                radial-gradient(circle at 70% 20%, rgba(57,73,171,0.2) 0%, transparent 50%);
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+  @keyframes bgPulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+  .auth-card {
+    background: white; border-radius: 20px; padding: 48px 40px; width: 420px; max-width: 95vw;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3); position: relative; z-index: 1;
+    animation: slideUp 0.5s ease;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  .auth-logo { text-align: center; margin-bottom: 32px; }
+  .auth-logo .logo-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 72px; height: 72px; border-radius: 18px;
+    background: linear-gradient(135deg, #1a237e, #3949ab);
+    margin-bottom: 16px;
+  }
+  .auth-logo .logo-badge svg { width: 40px; height: 40px; fill: white; }
+  .auth-logo h1 { font-size: 26px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+  .auth-logo p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .vtu-badge {
+    display: inline-block; background: #fff3e0; color: #e65100; border: 1px solid #ffcc80;
+    border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px; margin-top: 8px;
+  }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 14px; color: var(--text); background: #f8f9ff; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus {
+    border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(57,73,171,0.1);
+    background: white;
+  }
+  .btn { padding: 12px 24px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white; width: 100%; justify-content: center; font-size: 15px; padding: 14px; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(26,35,126,0.3); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-secondary { background: #f0f2f7; color: var(--text); }
+  .btn-secondary:hover { background: #e0e4f0; }
+  .btn-success { background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white; }
+  .btn-danger { background: linear-gradient(135deg, #b71c1c, #c62828); color: white; }
+  .btn-accent { background: linear-gradient(135deg, var(--accent), var(--accent-light)); color: white; }
+  .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 8px; }
+  .btn-xs { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+  .error-msg { background: #fce4e4; border: 1px solid #f4a8a8; color: #b71c1c; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+
+  /* ===== APP LAYOUT ===== */
+  #app { display: none; }
+  .layout { display: flex; min-height: 100vh; }
+  
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w); background: linear-gradient(180deg, #0d1757 0%, #1a237e 100%);
+    color: white; position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;
+    display: flex; flex-direction: column; overflow-y: auto;
+    transition: transform 0.3s ease;
+  }
+  .sidebar-logo {
+    padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .sidebar-logo .s-icon {
+    width: 40px; height: 40px; background: rgba(255,255,255,0.15); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .sidebar-logo h2 { font-size: 16px; font-weight: 700; }
+  .sidebar-logo p { font-size: 11px; opacity: 0.6; }
+  .user-badge {
+    margin: 16px; padding: 14px; background: rgba(255,255,255,0.08); border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .user-badge .u-name { font-size: 14px; font-weight: 600; }
+  .user-badge .u-role { font-size: 11px; opacity: 0.6; margin-top: 3px; }
+  .u-role-tag {
+    display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px;
+  }
+  .role-admin { background: rgba(255,109,0,0.3); color: #ffcc80; }
+  .role-principal { background: rgba(67,160,71,0.3); color: #a5d6a7; }
+  .role-hod { background: rgba(41,182,246,0.3); color: #81d4fa; }
+  .role-staff { background: rgba(171,71,188,0.3); color: #ce93d8; }
+  
+  .sidebar-nav { flex: 1; padding: 8px 0; }
+  .nav-section { padding: 16px 16px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; opacity: 0.4; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px 16px; margin: 2px 8px;
+    border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 14px; opacity: 0.75;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.1); opacity: 1; }
+  .nav-item.active { background: rgba(255,255,255,0.15); opacity: 1; font-weight: 600; }
+  .nav-item .nav-icon { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.8; }
+  .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+  
+  /* MAIN */
+  .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+  .topbar {
+    height: var(--header-h); background: white; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 50;
+    box-shadow: var(--shadow);
+  }
+  .topbar-title { font-size: 18px; font-weight: 700; color: var(--primary); flex: 1; }
+  .topbar-actions { display: flex; align-items: center; gap: 12px; }
+  .content { padding: 24px; flex: 1; }
+  
+  /* CARDS */
+  .card { background: white; border-radius: 14px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .card-header h3 { font-size: 16px; font-weight: 700; color: var(--primary); }
+  .card-body { padding: 24px; }
+  .card-footer { padding: 16px 24px; border-top: 1px solid var(--border); background: #f8f9ff; border-radius: 0 0 14px 14px; }
+  
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: white; border-radius: 14px; padding: 20px; border: 1px solid var(--border);
+    box-shadow: var(--shadow); display: flex; align-items: flex-start; gap: 16px;
+  }
+  .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .stat-icon svg { width: 24px; height: 24px; }
+  .stat-value { font-size: 28px; font-weight: 800; color: var(--primary); line-height: 1; }
+  .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  
+  /* TABLES */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); background: #f8f9ff; border-bottom: 2px solid var(--border); }
+  td { padding: 13px 16px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8f9ff; }
+  
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-blue { background: #e3f2fd; color: #0d47a1; }
+  .badge-green { background: #e8f5e9; color: #1b5e20; }
+  .badge-orange { background: #fff3e0; color: #e65100; }
+  .badge-purple { background: #f3e5f5; color: #4a148c; }
+  .badge-red { background: #ffebee; color: #b71c1c; }
+  .badge-gray { background: #f5f5f5; color: #616161; }
+  
+  /* FORMS */
+  .form-row { display: grid; gap: 16px; }
+  .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .field input, .field select, .field textarea {
+    padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 14px; color: var(--text); outline: none; transition: all 0.2s; background: #f8f9ff;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(57,73,171,0.1); background: white;
+  }
+  .field textarea { resize: vertical; min-height: 80px; }
+  
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: white; border-radius: 16px; width: 100%; max-width: 640px; max-height: 90vh;
+    overflow-y: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s ease;
+  }
+  .modal-lg { max-width: 900px; }
+  .modal-xl { max-width: 1100px; }
+  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 18px; font-weight: 700; color: var(--primary); }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; background: #f8f9ff; border-radius: 0 0 16px 16px; }
+  .close-btn { width: 32px; height: 32px; border: none; background: #f0f2f7; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-muted); }
+  .close-btn:hover { background: #e0e4f0; color: var(--text); }
+  
+  /* PAGE SECTIONS */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .section-header h2 { font-size: 20px; font-weight: 800; color: var(--primary); }
+  
+  /* QUESTION PAPER */
+  .qp-container { background: white; padding: 48px; max-width: 900px; margin: 0 auto; font-family: 'Times New Roman', serif; }
+  .qp-header { text-align: center; border-bottom: 3px double #333; padding-bottom: 16px; margin-bottom: 16px; }
+  .qp-uni { font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+  .qp-title { font-size: 18px; font-weight: bold; margin: 8px 0; }
+  .qp-sub { font-size: 14px; }
+  .qp-meta { display: flex; justify-content: space-between; font-size: 13px; margin: 12px 0; padding: 8px 0; border-top: 1px solid #333; border-bottom: 1px solid #333; }
+  .qp-section { margin: 20px 0; }
+  .qp-section-title { font-size: 14px; font-weight: bold; background: #f0f0f0; padding: 8px 12px; border: 1px solid #ddd; text-transform: uppercase; }
+  .qp-question { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px dotted #ccc; font-size: 13px; line-height: 1.6; }
+  .qp-qnum { font-weight: bold; min-width: 30px; }
+  .qp-marks { margin-left: auto; font-weight: bold; min-width: 60px; text-align: right; }
+  .qp-co-po { font-size: 10px; color: #555; }
+  
+  /* TOGGLE */
+  .toggle-group { display: flex; gap: 2px; background: #f0f2f7; border-radius: 10px; padding: 3px; }
+  .toggle-btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-muted); background: transparent; transition: all 0.2s; }
+  .toggle-btn.active { background: white; color: var(--primary); box-shadow: var(--shadow); }
+
+  /* ALERTS */
+  .alert { padding: 12px 16px; border-radius: 10px; font-size: 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .alert-info { background: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
+  .alert-success { background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+  .alert-warning { background: #fff8e1; color: #f57f17; border: 1px solid #ffe082; }
+
+  /* QUESTION BANK */
+  .q-item { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 10px; background: white; transition: all 0.2s; }
+  .q-item:hover { border-color: var(--primary-light); box-shadow: var(--shadow); }
+  .q-item-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .q-text { font-size: 14px; flex: 1; line-height: 1.5; }
+  .q-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  
+  /* PRINT STYLES */
+  @media print {
+    #auth-screen, .sidebar, .topbar, .no-print { display: none !important; }
+    .main { margin-left: 0 !important; }
+    .qp-container { padding: 20px; box-shadow: none; }
+    body { background: white; }
+  }
+  
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .form-row.cols-2, .form-row.cols-3, .form-row.cols-4 { grid-template-columns: 1fr; }
+  }
+
+  .hidden { display: none !important; }
+  .page { display: none; }
+  .page.active { display: block; }
+  
+  /* Dashboard quick actions */
+  .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .qa-card {
+    background: white; border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .qa-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary-light); }
+  .qa-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+  .qa-icon svg { width: 28px; height: 28px; }
+  .qa-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .qa-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  
+  .progress-bar { height: 6px; background: #e0e4f0; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-light)); transition: width 0.3s; }
+  
+  select option { font-size: 14px; }
+  
+  .unit-tab { display: inline-flex; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); margin-right: 6px; margin-bottom: 6px; transition: all 0.2s; }
+  .unit-tab.sel { background: var(--primary); color: white; border-color: var(--primary); }
+</style>
+</head>
+<body>
+
+<!-- ==================== AUTH SCREEN ==================== -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-badge">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <h1>QPDS Portal</h1>
+      <p>Question Paper Design System</p>
+      <span class="vtu-badge">VTU Affiliated</span>
+    </div>
+    <div id="login-error" class="error-msg">Invalid credentials. Please try again.</div>
+    <div class="form-group">
+      <label>Username / Email</label>
+      <input type="text" id="login-user" placeholder="Enter your username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter your password" autocomplete="current-password"/>
+    </div>
+    <div class="form-group">
+      <label>Login As</label>
+      <select id="login-role">
+        <option value="admin">Admin</option>
+        <option value="principal">Principal</option>
+        <option value="hod">HOD</option>
+        <option value="staff">Staff</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+      Sign In to QPDS
+    </button>
+    <div style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-light);">
+      Demo: admin/admin123 | principal/prin123 | hod/hod123 | staff/staff123
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MAIN APP ==================== -->
+<div id="app">
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="s-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div><h2>QPDS</h2><p>VTU System</p></div>
+      </div>
+      <div class="user-badge">
+        <div class="u-name" id="sb-name">Admin User</div>
+        <div class="u-role" id="sb-dept">System Administrator</div>
+        <div class="u-role-tag role-admin" id="sb-role-tag">Admin</div>
+      </div>
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <!-- Dynamically filled -->
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-sm" style="width:100%;background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.2);" onclick="doLogout()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-actions">
+          <span id="topbar-inst" style="font-size:13px;color:var(--text-muted);"></span>
+          <button class="btn btn-sm btn-secondary" onclick="showPage('dashboard')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home
+          </button>
+        </div>
+      </div>
+      <div class="content" id="content">
+        <!-- Pages rendered here -->
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<div class="modal-overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-user-title">Add User</h3>
+      <button class="close-btn" onclick="closeModal('modal-user')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row cols-2">
+        <div class="field"><label>Full Name</label><input type="text" id="u-name" placeholder="Full name"/></div>
+        <div class="field"><label>Username</label><input type="text" id="u-uname" placeholder="Username"/></div>
+      </div>
+      <div class="form-row cols-2" style="margin-top:14px">
+        <div class="field"><label>Email</label><input type="email" id="u-email" placeholder="Email"/></div>
+        <div class="field"><label>Password</label><input type="password" id="u-pass" placeholder="Password"/></div>
+      </div>
+      <div class="form-row cols-2" style="margin-top:14px">
+        <div class="field"><label>Role</label>
+          <select id="u-role" onchange="toggleDeptField()">
+            <option value="admin">Admin</option>
+            <option value="principal">Principal</option>
+            <option value="hod">HOD</option>
+            <option value="staff">Staff</option>
+          </select>
+        </div>
+        <div class="field" id="dept-field"><label>Department</label>
+          <select id="u-dept">
+            <option value="CS">Computer Science (CS)</option>
+            <option value="IS">Information Science (IS)</option>
+            <option value="EC">Electronics & Communication (EC)</option>
+            <option value="EE">Electrical Engineering (EE)</option>
+            <option value="ME">Mechanical Engineering (ME)</option>
+            <option value="CV">Civil Engineering (CV)</option>
+            <option value="AI">AI & ML (AI)</option>
+            <option value="DS">Data Science (DS)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-user')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-question">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3 id="modal-q-title">Add Question</h3>
+      <button class="close-btn" onclick="closeModal('modal-question')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field" style="margin-bottom:14px">
+        <label>Question Text</label>
+        <textarea id="q-text" placeholder="Enter the question..."></textarea>
+      </div>
+      <div class="form-row cols-3">
+        <div class="field"><label>Subject</label>
+          <select id="q-subject">
+            <option value="">Select Subject</option>
+          </select>
+        </div>
+        <div class="field"><label>Unit</label>
+          <select id="q-unit">
+            <option value="1">Unit 1</option>
+            <option value="2">Unit 2</option>
+            <option value="3">Unit 3</option>
+            <option value="4">Unit 4</option>
+            <option value="5">Unit 5</option>
+          </select>
+        </div>
+        <div class="field"><label>Module</label>
+          <select id="q-module">
+            <option value="A">Module A</option>
+            <option value="B">Module B</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-4" style="margin-top:14px">
+        <div class="field"><label>Marks</label>
+          <select id="q-marks">
+            <option value="2">2 Marks</option>
+            <option value="5">5 Marks</option>
+            <option value="10">10 Marks</option>
+            <option value="12">12 Marks</option>
+            <option value="15">15 Marks</option>
+          </select>
+        </div>
+        <div class="field"><label>CO (Course Outcome)</label>
+          <select id="q-co">
+            <option value="CO1">CO1</option>
+            <option value="CO2">CO2</option>
+            <option value="CO3">CO3</option>
+            <option value="CO4">CO4</option>
+            <option value="CO5">CO5</option>
+            <option value="CO6">CO6</option>
+          </select>
+        </div>
+        <div class="field"><label>PO (Program Outcome)</label>
+          <select id="q-po">
+            <option value="PO1">PO1</option>
+            <option value="PO2">PO2</option>
+            <option value="PO3">PO3</option>
+            <option value="PO4">PO4</option>
+            <option value="PO5">PO5</option>
+            <option value="PO6">PO6</option>
+            <option value="PO7">PO7</option>
+            <option value="PO8">PO8</option>
+            <option value="PO9">PO9</option>
+            <option value="PO10">PO10</option>
+            <option value="PO11">PO11</option>
+            <option value="PO12">PO12</option>
+          </select>
+        </div>
+        <div class="field"><label>Bloom's Level</label>
+          <select id="q-bloom">
+            <option value="L1">L1 - Remember</option>
+            <option value="L2">L2 - Understand</option>
+            <option value="L3">L3 - Apply</option>
+            <option value="L4">L4 - Analyze</option>
+            <option value="L5">L5 - Evaluate</option>
+            <option value="L6">L6 - Create</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-2" style="margin-top:14px">
+        <div class="field"><label>Difficulty</label>
+          <select id="q-diff">
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+        </div>
+        <div class="field"><label>Question Type</label>
+          <select id="q-type">
+            <option value="Theory">Theory</option>
+            <option value="Numerical">Numerical</option>
+            <option value="Design">Design</option>
+            <option value="Case Study">Case Study</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-question')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveQuestion()">Save Question</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-subject">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Subject</h3>
+      <button class="close-btn" onclick="closeModal('modal-subject')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row cols-2">
+        <div class="field"><label>Subject Code</label><input type="text" id="s-code" placeholder="e.g. 21CS42"/></div>
+        <div class="field"><label>Subject Name</label><input type="text" id="s-name" placeholder="Subject full name"/></div>
+      </div>
+      <div class="form-row cols-3" style="margin-top:14px">
+        <div class="field"><label>Department</label>
+          <select id="s-dept">
+            <option value="CS">Computer Science</option>
+            <option value="IS">Information Science</option>
+            <option value="EC">Electronics & Comm.</option>
+            <option value="EE">Electrical Engg.</option>
+            <option value="ME">Mechanical Engg.</option>
+            <option value="CV">Civil Engg.</option>
+            <option value="AI">AI & ML</option>
+            <option value="DS">Data Science</option>
+          </select>
+        </div>
+        <div class="field"><label>Semester</label>
+          <select id="s-sem">
+            <option value="1">Semester 1</option>
+            <option value="2">Semester 2</option>
+            <option value="3">Semester 3</option>
+            <option value="4">Semester 4</option>
+            <option value="5">Semester 5</option>
+            <option value="6">Semester 6</option>
+            <option value="7">Semester 7</option>
+            <option value="8">Semester 8</option>
+          </select>
+        </div>
+        <div class="field"><label>Credits</label>
+          <select id="s-credits">
+            <option value="3">3 Credits</option>
+            <option value="4">4 Credits</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-2" style="margin-top:14px">
+        <div class="field"><label>Scheme Year</label>
+          <select id="s-scheme">
+            <option value="2021">2021 Scheme</option>
+            <option value="2022">2022 Scheme</option>
+            <option value="2023">2023 Scheme</option>
+          </select>
+        </div>
+        <div class="field"><label>Total Marks</label>
+          <select id="s-total">
+            <option value="100">100</option>
+            <option value="60">60 (CIE)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-subject')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSubject()">Save Subject</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-generate">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3>Generate Question Paper</h3>
+      <button class="close-btn" onclick="closeModal('modal-generate')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info" style="margin-bottom:16px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Following VTU examination pattern with shuffling algorithm
+      </div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Subject</label>
+          <select id="gen-subject">
+            <option value="">Select Subject</option>
+          </select>
+        </div>
+        <div class="field"><label>Exam Type</label>
+          <select id="gen-type">
+            <option value="CIE">CIE (Internal)</option>
+            <option value="SEE">SEE (Semester End)</option>
+            <option value="MOCK">Mock Exam</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-3" style="margin-top:14px">
+        <div class="field"><label>CIE Number</label>
+          <select id="gen-cie">
+            <option value="CIE-1">CIE-1</option>
+            <option value="CIE-2">CIE-2</option>
+            <option value="CIE-3">CIE-3</option>
+          </select>
+        </div>
+        <div class="field"><label>Exam Date</label><input type="date" id="gen-date"/></div>
+        <div class="field"><label>Duration</label>
+          <select id="gen-dur">
+            <option value="1.5 hrs">1.5 Hours</option>
+            <option value="2 hrs">2 Hours</option>
+            <option value="3 hrs">3 Hours</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-2" style="margin-top:14px">
+        <div class="field"><label>Set</label>
+          <select id="gen-set">
+            <option value="A">Set A</option>
+            <option value="B">Set B</option>
+            <option value="C">Set C</option>
+          </select>
+        </div>
+        <div class="field"><label>Shuffle Method</label>
+          <select id="gen-shuffle">
+            <option value="full">Full Shuffle (All questions)</option>
+            <option value="within-unit">Within Unit Shuffle</option>
+            <option value="options">Options Only</option>
+            <option value="none">No Shuffle</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px;">VTU Pattern Configuration</label>
+        <div class="form-row cols-3">
+          <div class="field"><label>Part A (2M each)</label><input type="number" id="gen-pa" value="5" min="0" max="10"/></div>
+          <div class="field"><label>Part B (10M choice)</label><input type="number" id="gen-pb" value="5" min="0" max="5"/></div>
+          <div class="field"><label>Units to Cover</label>
+            <select id="gen-units" multiple style="height:80px">
+              <option value="1" selected>Unit 1</option>
+              <option value="2" selected>Unit 2</option>
+              <option value="3" selected>Unit 3</option>
+              <option value="4" selected>Unit 4</option>
+              <option value="5" selected>Unit 5</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label>Special Instructions</label>
+        <textarea id="gen-instr" placeholder="Any special instructions for the paper...">Answer any FIVE full questions choosing ONE full question from each module.</textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal('modal-generate')">Cancel</button>
+      <button class="btn btn-accent btn-sm" onclick="generatePaper()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Generate Paper
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-paper-view">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <h3>Question Paper Preview</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-success btn-sm" onclick="printPaper()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print
+        </button>
+        <button class="close-btn" onclick="closeModal('modal-paper-view')">×</button>
+      </div>
+    </div>
+    <div class="modal-body" id="paper-preview-body"></div>
+  </div>
+</div>
+
+<script>
+// ===================================================================
+//  QPDS DATA STORE
+// ===================================================================
+const DB = {
+  users: [
+    { id:1, name:'Super Admin', username:'admin', password:'admin123', role:'admin', dept:'ALL', email:'admin@college.edu', active:true },
+    { id:2, name:'Dr. Ramesh Kumar', username:'principal', password:'prin123', role:'principal', dept:'ALL', email:'principal@college.edu', active:true },
+    { id:3, name:'Dr. Priya Sharma', username:'hod', password:'hod123', role:'hod', dept:'CS', email:'hod.cs@college.edu', active:true },
+    { id:4, name:'Prof. Arun Reddy', username:'staff', password:'staff123', role:'staff', dept:'CS', email:'staff@college.edu', active:true },
+    { id:5, name:'Dr. Sanjay Patil', username:'hod_is', password:'hod123', role:'hod', dept:'IS', email:'hod.is@college.edu', active:true },
+  ],
+  subjects: [
+    { id:1, code:'21CS42', name:'Analysis & Design of Algorithms', dept:'CS', sem:4, credits:4, scheme:'2021', totalMarks:100 },
+    { id:2, code:'21CS43', name:'Database Management System', dept:'CS', sem:4, credits:4, scheme:'2021', totalMarks:100 },
+    { id:3, code:'21CS44', name:'Operating Systems', dept:'CS', sem:4, credits:4, scheme:'2021', totalMarks:100 },
+    { id:4, code:'21IS41', name:'Software Engineering', dept:'IS', sem:4, credits:4, scheme:'2021', totalMarks:100 },
+    { id:5, code:'21CS52', name:'Compiler Design', dept:'CS', sem:5, credits:4, scheme:'2021', totalMarks:100 },
+    { id:6, code:'21CS53', name:'Computer Networks', dept:'CS', sem:5, credits:4, scheme:'2021', totalMarks:100 },
+  ],
+  questions: [
+    { id:1, text:'Define algorithm. Explain the properties of an algorithm with examples.', subjectId:1, unit:1, module:'A', marks:10, co:'CO1', po:'PO1', bloom:'L1', diff:'Easy', type:'Theory' },
+    { id:2, text:'Explain the concept of asymptotic notations Big-O, Omega and Theta with examples.', subjectId:1, unit:1, module:'A', marks:10, co:'CO1', po:'PO2', bloom:'L2', diff:'Medium', type:'Theory' },
+    { id:3, text:'Write and analyze the time complexity of Merge Sort algorithm.', subjectId:1, unit:2, module:'A', marks:10, co:'CO2', po:'PO1', bloom:'L4', diff:'Medium', type:'Theory' },
+    { id:4, text:'Explain Quick Sort with an example. Derive its best, worst and average case complexity.', subjectId:1, unit:2, module:'A', marks:10, co:'CO2', po:'PO2', bloom:'L4', diff:'Hard', type:'Theory' },
+    { id:5, text:'Describe the Greedy method with an example of Knapsack problem.', subjectId:1, unit:3, module:'A', marks:10, co:'CO3', po:'PO3', bloom:'L3', diff:'Medium', type:'Theory' },
+    { id:6, text:'Explain Floyd-Warshall algorithm for all pairs shortest path.', subjectId:1, unit:3, module:'B', marks:10, co:'CO3', po:'PO3', bloom:'L2', diff:'Hard', type:'Theory' },
+    { id:7, text:'What is NP-completeness? Explain with suitable examples.', subjectId:1, unit:5, module:'B', marks:10, co:'CO5', po:'PO1', bloom:'L2', diff:'Hard', type:'Theory' },
+    { id:8, text:'Write short note on: (a) Divide and Conquer (b) Dynamic Programming', subjectId:1, unit:2, module:'B', marks:10, co:'CO2', po:'PO2', bloom:'L2', diff:'Easy', type:'Theory' },
+    { id:9, text:'Define an algorithm. List properties.', subjectId:1, unit:1, module:'A', marks:2, co:'CO1', po:'PO1', bloom:'L1', diff:'Easy', type:'Theory' },
+    { id:10, text:'What is time complexity? Give example.', subjectId:1, unit:1, module:'A', marks:2, co:'CO1', po:'PO1', bloom:'L1', diff:'Easy', type:'Theory' },
+    { id:11, text:'State the principle of Merge Sort.', subjectId:1, unit:2, module:'A', marks:2, co:'CO2', po:'PO1', bloom:'L1', diff:'Easy', type:'Theory' },
+    { id:12, text:'Define Greedy algorithm.', subjectId:1, unit:3, module:'A', marks:2, co:'CO3', po:'PO2', bloom:'L1', diff:'Easy', type:'Theory' },
+    { id:13, text:'What is Dynamic Programming?', subjectId:1, unit:3, module:'B', marks:2, co:'CO3', po:'PO2', bloom:'L1', diff:'Easy', type:'Theory' },
+    { id:14, text:'Define NP-hard and NP-complete.', subjectId:1, unit:5, module:'B', marks:2, co:'CO5', po:'PO1', bloom:'L1', diff:'Medium', type:'Theory' },
+    { id:15, text:'Explain the concept of RDBMS. Differentiate DBMS and RDBMS.', subjectId:2, unit:1, module:'A', marks:10, co:'CO1', po:'PO1', bloom:'L2', diff:'Easy', type:'Theory' },
+    { id:16, text:'Explain the concept of ER model with a case study of hospital management.', subjectId:2, unit:1, module:'A', marks:10, co:'CO1', po:'PO2', bloom:'L3', diff:'Medium', type:'Theory' },
+    { id:17, text:'Explain normalization. Explain 1NF, 2NF and 3NF with examples.', subjectId:2, unit:2, module:'A', marks:10, co:'CO2', po:'PO1', bloom:'L2', diff:'Medium', type:'Theory' },
+    { id:18, text:'What is SQL? Explain DDL and DML commands with examples.', subjectId:2, unit:3, module:'A', marks:10, co:'CO3', po:'PO2', bloom:'L3', diff:'Easy', type:'Theory' },
+    { id:19, text:'Write short note on Deadlock and its handling in DBMS.', subjectId:2, unit:2, module:'B', marks:2, co:'CO2', po:'PO2', bloom:'L1', diff:'Easy', type:'Theory' },
+    { id:20, text:'Define Transaction. List ACID properties.', subjectId:2, unit:4, module:'A', marks:2, co:'CO4', po:'PO1', bloom:'L1', diff:'Easy', type:'Theory' },
+  ],
+  papers: [],
+  nextId: { users: 6, subjects: 7, questions: 21, papers: 1 }
+};
+
+let currentUser = null;
+
+// ===================================================================
+//  VTU CO-PO MAPPING & INFO
+// ===================================================================
+const VTU_INFO = {
+  pos: {
+    PO1: 'Engineering Knowledge',
+    PO2: 'Problem Analysis',
+    PO3: 'Design/Development',
+    PO4: 'Investigation',
+    PO5: 'Modern Tool Usage',
+    PO6: 'Engineer & Society',
+    PO7: 'Environment & Sustainability',
+    PO8: 'Ethics',
+    PO9: 'Individual & Team Work',
+    PO10: 'Communication',
+    PO11: 'Project Management',
+    PO12: 'Life-long Learning'
+  },
+  examPattern: {
+    CIE: { total: 50, partA: { count: 5, marks: 2 }, partB: { count: 5, eachHas: 2, marks: 10 } },
+    SEE: { total: 100, partA: { count: 10, marks: 2 }, partB: { count: 5, eachHas: 2, marks: 20 } }
+  },
+  schemes: ['2021', '2022', '2023']
+};
+
+// ===================================================================
+//  AUTH
+// ===================================================================
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  const r = document.getElementById('login-role').value;
+  const user = DB.users.find(x => x.username === u && x.password === p && x.role === r && x.active);
+  if (!user) {
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+  currentUser = user;
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('auth-screen').style.display !== 'none') doLogin();
+});
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+}
+
+// ===================================================================
+//  ROLE NAV CONFIG
+// ===================================================================
+const NAV_CONFIG = {
+  admin: [
+    { section: 'Main' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+    { id: 'users', label: 'Manage Users', icon: 'users' },
+    { id: 'roles', label: 'Roles & Permissions', icon: 'shield' },
+    { section: 'Academic' },
+    { id: 'subjects', label: 'Subjects', icon: 'book' },
+    { id: 'questions', label: 'Question Bank', icon: 'list' },
+    { section: 'Papers' },
+    { id: 'generate', label: 'Generate Paper', icon: 'zap' },
+    { id: 'papers', label: 'All Papers', icon: 'file' },
+    { section: 'Settings' },
+    { id: 'copo', label: 'CO-PO Mapping', icon: 'link' },
+    { id: 'settings', label: 'System Settings', icon: 'settings' },
+  ],
+  principal: [
+    { section: 'Main' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+    { id: 'users', label: 'Manage Staff', icon: 'users' },
+    { section: 'Academic' },
+    { id: 'subjects', label: 'Subjects', icon: 'book' },
+    { id: 'questions', label: 'Question Bank', icon: 'list' },
+    { section: 'Papers' },
+    { id: 'generate', label: 'Generate Paper', icon: 'zap' },
+    { id: 'papers', label: 'All Papers', icon: 'file' },
+    { section: 'Reports' },
+    { id: 'copo', label: 'CO-PO Analysis', icon: 'bar-chart' },
+  ],
+  hod: [
+    { section: 'Main' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+    { id: 'users', label: 'Dept. Staff', icon: 'users' },
+    { section: 'Academic' },
+    { id: 'subjects', label: 'Subjects', icon: 'book' },
+    { id: 'questions', label: 'Question Bank', icon: 'list' },
+    { section: 'Reports' },
+    { id: 'copo', label: 'CO-PO Mapping', icon: 'link' },
+  ],
+  staff: [
+    { section: 'Main' },
+    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+    { id: 'questions', label: 'My Questions', icon: 'list' },
+    { id: 'subjects', label: 'Subjects', icon: 'book' },
+    { section: 'Info' },
+    { id: 'copo', label: 'CO-PO Reference', icon: 'link' },
+  ]
+};
+
+const ICONS = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  zap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+  settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2m0 16v2m9.07-9.07h-2M4.93 12h-2m14.14 5.66l-1.41-1.41M6.34 6.34L4.93 4.93m12.73 12.73l-1.41-1.41M6.34 17.66L4.93 19.07"/></svg>',
+  'bar-chart': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
+};
+
+// ===================================================================
+//  APP INIT
+// ===================================================================
+function initApp() {
+  const u = currentUser;
+  document.getElementById('sb-name').textContent = u.name;
+  document.getElementById('sb-dept').textContent = u.dept === 'ALL' ? 'All Departments' : `Dept: ${u.dept}`;
+  document.getElementById('sb-role-tag').textContent = u.role.charAt(0).toUpperCase() + u.role.slice(1);
+  document.getElementById('sb-role-tag').className = `u-role-tag role-${u.role}`;
+  document.getElementById('topbar-inst').textContent = 'JNANA JYOTHI INSTITUTE OF TECHNOLOGY';
+  
+  // Build nav
+  const nav = document.getElementById('sidebar-nav');
+  nav.innerHTML = '';
+  (NAV_CONFIG[u.role] || []).forEach(item => {
+    if (item.section) {
+      nav.innerHTML += `<div class="nav-section">${item.section}</div>`;
+    } else {
+      nav.innerHTML += `<div class="nav-item" id="nav-${item.id}" onclick="showPage('${item.id}')">
+        <span class="nav-icon">${ICONS[item.icon]||''}</span>${item.label}
+      </div>`;
+    }
+  });
+  
+  showPage('dashboard');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById(`nav-${id}`);
+  if (navEl) navEl.classList.add('active');
+  
+  const titles = { dashboard:'Dashboard', users:'User Management', roles:'Roles & Permissions', subjects:'Subject Management', questions:'Question Bank', generate:'Generate Question Paper', papers:'Question Papers', copo:'CO-PO Mapping', settings:'System Settings' };
+  document.getElementById('topbar-title').textContent = titles[id] || id;
+  
+  const pages = { dashboard: pageDashboard, users: pageUsers, roles: pageRoles, subjects: pageSubjects, questions: pageQuestions, generate: pageGenerate, papers: pagePapers, copo: pageCopo, settings: pageSettings };
+  const fn = pages[id];
+  if (fn) document.getElementById('content').innerHTML = fn();
+  afterPage(id);
+}
+
+function afterPage(id) {
+  if (id === 'generate') {
+    populateSubjectDropdowns();
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('gen-date').value = today;
+  }
+  if (id === 'questions') populateSubjectDropdowns();
+}
+
+// ===================================================================
+//  PAGES
+// ===================================================================
+function pageDashboard() {
+  const u = currentUser;
+  const mySubjects = getMySubjects();
+  const myQuestions = DB.questions.filter(q => mySubjects.map(s=>s.id).includes(q.subjectId));
+  const myPapers = DB.papers;
+  
+  const roleMessages = {
+    admin: 'Full system access • Manage users, subjects, questions and papers',
+    principal: 'Oversee all departments • Generate and approve question papers',
+    hod: `HOD - ${u.dept} Department • Manage staff and subjects`,
+    staff: `Faculty • ${u.dept} Department • Add questions to bank`
+  };
+  
+  return `
+    <div class="alert alert-info" style="margin-bottom:20px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      Welcome back, <strong>${u.name}</strong> — ${roleMessages[u.role]}
+    </div>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e3f2fd">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1565c0" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div>
+          <div class="stat-value">${DB.users.filter(x=>x.active).length}</div>
+          <div class="stat-label">Active Users</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e8f5e9">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <div>
+          <div class="stat-value">${mySubjects.length}</div>
+          <div class="stat-label">Subjects</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fff3e0">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#e65100" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+        </div>
+        <div>
+          <div class="stat-value">${myQuestions.length}</div>
+          <div class="stat-label">Questions</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f3e5f5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#6a1b9a" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div>
+          <div class="stat-value">${myPapers.length}</div>
+          <div class="stat-label">Papers Generated</div>
+        </div>
+      </div>
+    </div>
+    
+    <div style="margin-bottom:20px">
+      <div class="section-header"><h2>Quick Actions</h2></div>
+      <div class="quick-actions">
+        ${canDo('questions') ? `
+        <div class="qa-card" onclick="showPage('questions')">
+          <div class="qa-icon" style="background:#e3f2fd"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1565c0" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+          <div class="qa-title">Add Question</div>
+          <div class="qa-desc">Add to question bank</div>
+        </div>` : ''}
+        ${canDo('generate') ? `
+        <div class="qa-card" onclick="showPage('generate')">
+          <div class="qa-icon" style="background:#fff3e0"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e65100" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          <div class="qa-title">Generate Paper</div>
+          <div class="qa-desc">Auto-generate with VTU pattern</div>
+        </div>` : ''}
+        ${canDo('users') ? `
+        <div class="qa-card" onclick="showPage('users')">
+          <div class="qa-icon" style="background:#e8f5e9"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+          <div class="qa-title">Manage Users</div>
+          <div class="qa-desc">Add / edit users</div>
+        </div>` : ''}
+        <div class="qa-card" onclick="showPage('copo')">
+          <div class="qa-icon" style="background:#f3e5f5"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6a1b9a" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+          <div class="qa-title">CO-PO Mapping</div>
+          <div class="qa-desc">VTU outcome mapping</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+        <h3>Recent Question Papers</h3>
+      </div>
+      <div class="card-body">
+        ${myPapers.length === 0 ? `<div style="text-align:center;padding:32px;color:var(--text-muted)">No papers generated yet. <a href="#" onclick="showPage('generate');return false" style="color:var(--primary-light)">Generate one</a></div>` :
+        `<div class="table-wrap"><table>
+          <tr><th>Title</th><th>Subject</th><th>Type</th><th>Date</th><th>Set</th><th>Actions</th></tr>
+          ${myPapers.slice(-5).reverse().map(p => `
+          <tr>
+            <td><strong>${p.title}</strong></td>
+            <td>${p.subjectName}</td>
+            <td><span class="badge badge-blue">${p.examType}</span></td>
+            <td>${p.date}</td>
+            <td><span class="badge badge-orange">Set ${p.set}</span></td>
+            <td><button class="btn btn-xs btn-accent" onclick="viewPaper(${p.id})">View</button></td>
+          </tr>`).join('')}
+        </table></div>`}
+      </div>
+    </div>
+  `;
+}
+
+function canDo(page) {
+  const perms = {
+    admin: ['dashboard','users','roles','subjects','questions','generate','papers','copo','settings'],
+    principal: ['dashboard','users','subjects','questions','generate','papers','copo'],
+    hod: ['dashboard','users','subjects','questions','copo'],
+    staff: ['dashboard','questions','subjects','copo']
+  };
+  return (perms[currentUser.role] || []).includes(page);
+}
+
+function getMySubjects() {
+  if (currentUser.role === 'admin' || currentUser.role === 'principal') return DB.subjects;
+  return DB.subjects.filter(s => s.dept === currentUser.dept);
+}
+
+// ===================================================================
+//  USERS PAGE
+// ===================================================================
+function pageUsers() {
+  let users = DB.users;
+  // HOD can only see/add their dept staff
+  if (currentUser.role === 'hod') users = DB.users.filter(u => u.dept === currentUser.dept || u.role === 'staff');
+  // Staff cannot access users page at all
+  if (currentUser.role === 'staff') return '<div class="alert alert-warning">Access denied.</div>';
+  
+  const canAdd = currentUser.role === 'admin' || currentUser.role === 'principal' || currentUser.role === 'hod';
+  
+  return `
+    <div class="section-header">
+      <h2>User Management</h2>
+      ${canAdd ? `<button class="btn btn-primary btn-sm" onclick="openUserModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add User
+      </button>` : ''}
+    </div>
+    ${currentUser.role === 'hod' ? `<div class="alert alert-info" style="margin-bottom:16px">As HOD of ${currentUser.dept}, you can only add staff to your department.</div>` : ''}
+    <div class="card">
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <tr><th>#</th><th>Name</th><th>Username</th><th>Role</th><th>Dept</th><th>Email</th><th>Status</th><th>Actions</th></tr>
+            ${users.map((u,i) => `
+            <tr>
+              <td>${i+1}</td>
+              <td><strong>${u.name}</strong></td>
+              <td><code style="background:#f0f2f7;padding:2px 8px;border-radius:4px;font-size:12px">${u.username}</code></td>
+              <td><span class="badge ${roleBadge(u.role)}">${u.role}</span></td>
+              <td>${u.dept}</td>
+              <td style="font-size:13px;color:var(--text-muted)">${u.email}</td>
+              <td><span class="badge ${u.active ? 'badge-green' : 'badge-red'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+              <td>
+                <button class="btn btn-xs btn-secondary" onclick="editUser(${u.id})" style="margin-right:4px">Edit</button>
+                ${currentUser.role === 'admin' ? `<button class="btn btn-xs btn-danger" onclick="toggleUser(${u.id})">${u.active ? 'Disable' : 'Enable'}</button>` : ''}
+              </td>
+            </tr>`).join('')}
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function roleBadge(r) {
+  return { admin:'badge-red', principal:'badge-green', hod:'badge-blue', staff:'badge-purple' }[r] || 'badge-gray';
+}
+
+function openUserModal(userId) {
+  document.getElementById('modal-user-title').textContent = userId ? 'Edit User' : 'Add User';
+  if (!userId) {
+    ['u-name','u-uname','u-email','u-pass'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('u-role').value = currentUser.role === 'hod' ? 'staff' : 'staff';
+    if (currentUser.role === 'hod') {
+      document.getElementById('u-role').disabled = true;
+      document.getElementById('u-dept').value = currentUser.dept;
+      document.getElementById('u-dept').disabled = true;
+    } else {
+      document.getElementById('u-role').disabled = false;
+      document.getElementById('u-dept').disabled = false;
+    }
+  }
+  toggleDeptField();
+  document.getElementById('modal-user').dataset.editId = userId || '';
+  openModal('modal-user');
+}
+
+function editUser(id) {
+  const u = DB.users.find(x => x.id === id);
+  if (!u) return;
+  document.getElementById('u-name').value = u.name;
+  document.getElementById('u-uname').value = u.username;
+  document.getElementById('u-email').value = u.email;
+  document.getElementById('u-pass').value = u.password;
+  document.getElementById('u-role').value = u.role;
+  document.getElementById('u-dept').value = u.dept;
+  openUserModal(id);
+}
+
+function toggleUser(id) {
+  const u = DB.users.find(x => x.id === id);
+  if (u) { u.active = !u.active; showPage('users'); }
+}
+
+function toggleDeptField() {
+  const r = document.getElementById('u-role').value;
+  document.getElementById('dept-field').style.display = (r === 'hod' || r === 'staff') ? 'flex' : 'none';
+}
+
+function saveUser() {
+  const editId = document.getElementById('modal-user').dataset.editId;
+  const userData = {
+    name: document.getElementById('u-name').value.trim(),
+    username: document.getElementById('u-uname').value.trim(),
+    email: document.getElementById('u-email').value.trim(),
+    password: document.getElementById('u-pass').value.trim(),
+    role: document.getElementById('u-role').value,
+    dept: document.getElementById('u-dept').value,
+    active: true
+  };
+  if (!userData.name || !userData.username || !userData.password) { alert('Please fill required fields'); return; }
+  
+  // HOD can only add staff in their dept
+  if (currentUser.role === 'hod' && userData.role !== 'staff') { alert('HOD can only add staff members.'); return; }
+  if (currentUser.role === 'hod' && userData.dept !== currentUser.dept) { alert(`HOD of ${currentUser.dept} can only add staff to ${currentUser.dept} department.`); return; }
+  
+  if (editId) {
+    const u = DB.users.find(x => x.id === parseInt(editId));
+    if (u) Object.assign(u, userData);
+  } else {
+    DB.users.push({ id: DB.nextId.users++, ...userData });
+  }
+  closeModal('modal-user');
+  showPage('users');
+}
+
+// ===================================================================
+//  ROLES PAGE
+// ===================================================================
+function pageRoles() {
+  if (currentUser.role !== 'admin') return '<div class="alert alert-warning">Admin only.</div>';
+  return `
+    <div class="section-header"><h2>Roles & Permissions</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+      ${Object.entries({
+        admin:'Full system access',
+        principal:'College-wide access',
+        hod:'Department-wide access',
+        staff:'Own subjects only'
+      }).map(([role, desc]) => `
+      <div class="card">
+        <div class="card-header">
+          <span class="badge ${roleBadge(role)}" style="font-size:14px;padding:6px 16px">${role.toUpperCase()}</span>
+          <h3>${desc}</h3>
+        </div>
+        <div class="card-body">
+          <table style="width:100%;font-size:13px">
+            ${permRows(role)}
+          </table>
+        </div>
+      </div>`).join('')}
+    </div>
+  `;
+}
+
+function permRows(role) {
+  const perms = {
+    'Add/Edit Users': {admin:true, principal:true, hod:'Dept only', staff:false},
+    'Delete Users': {admin:true, principal:false, hod:false, staff:false},
+    'Manage Subjects': {admin:true, principal:true, hod:'Dept only', staff:false},
+    'Add Questions': {admin:true, principal:true, hod:true, staff:'Own subjects'},
+    'Generate Paper': {admin:true, principal:true, hod:false, staff:false},
+    'Print Paper': {admin:true, principal:true, hod:false, staff:false},
+    'View Papers': {admin:true, principal:true, hod:true, staff:false},
+    'CO-PO Access': {admin:true, principal:true, hod:true, staff:'View only'},
+    'System Settings': {admin:true, principal:false, hod:false, staff:false},
+  };
+  return Object.entries(perms).map(([k,v]) => {
+    const val = v[role];
+    let badge = '';
+    if (val === true) badge = '<span class="badge badge-green">✓ Yes</span>';
+    else if (val === false) badge = '<span class="badge badge-red">✗ No</span>';
+    else badge = `<span class="badge badge-orange">${val}</span>`;
+    return `<tr><td style="padding:6px 0;color:var(--text-muted)">${k}</td><td style="text-align:right">${badge}</td></tr>`;
+  }).join('');
+}
+
+// ===================================================================
+//  SUBJECTS PAGE
+// ===================================================================
+function pageSubjects() {
+  const subjects = getMySubjects();
+  const canEdit = currentUser.role !== 'staff';
+  return `
+    <div class="section-header">
+      <h2>Subject Management</h2>
+      ${canEdit ? `<button class="btn btn-primary btn-sm" onclick="openModal('modal-subject')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Subject
+      </button>` : ''}
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <tr><th>Code</th><th>Subject Name</th><th>Dept</th><th>Sem</th><th>Credits</th><th>Scheme</th><th>Questions</th><th>Actions</th></tr>
+            ${subjects.map(s => `
+            <tr>
+              <td><code style="background:#f0f2f7;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600">${s.code}</code></td>
+              <td><strong>${s.name}</strong></td>
+              <td><span class="badge badge-blue">${s.dept}</span></td>
+              <td>Sem ${s.sem}</td>
+              <td>${s.credits}</td>
+              <td><span class="badge badge-gray">${s.scheme}</span></td>
+              <td><span class="badge badge-purple">${DB.questions.filter(q=>q.subjectId===s.id).length} Qs</span></td>
+              <td>
+                ${canEdit ? `<button class="btn btn-xs btn-secondary" style="margin-right:4px" onclick="editSubject(${s.id})">Edit</button>` : ''}
+                <button class="btn btn-xs btn-accent" onclick="filterQsBySubject(${s.id})">Questions</button>
+              </td>
+            </tr>`).join('')}
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function saveSubject() {
+  DB.subjects.push({
+    id: DB.nextId.subjects++,
+    code: document.getElementById('s-code').value.trim(),
+    name: document.getElementById('s-name').value.trim(),
+    dept: document.getElementById('s-dept').value,
+    sem: parseInt(document.getElementById('s-sem').value),
+    credits: parseInt(document.getElementById('s-credits').value),
+    scheme: document.getElementById('s-scheme').value,
+    totalMarks: parseInt(document.getElementById('s-total').value)
+  });
+  closeModal('modal-subject');
+  showPage('subjects');
+}
+
+function filterQsBySubject(id) {
+  showPage('questions');
+  setTimeout(() => {
+    const sel = document.getElementById('filter-subject');
+    if (sel) { sel.value = id; filterQuestions(); }
+  }, 100);
+}
+
+function editSubject(id) { alert('Edit subject ' + id + ' - Feature available in full deployment'); }
+
+// ===================================================================
+//  QUESTIONS PAGE
+// ===================================================================
+function pageQuestions() {
+  const mySubjects = getMySubjects();
+  return `
+    <div class="section-header">
+      <h2>Question Bank</h2>
+      <button class="btn btn-primary btn-sm" onclick="openQuestionModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Question
+      </button>
+    </div>
+    
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-body">
+        <div class="form-row cols-4">
+          <div class="field"><label>Filter by Subject</label>
+            <select id="filter-subject" onchange="filterQuestions()">
+              <option value="">All Subjects</option>
+              ${mySubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Unit</label>
+            <select id="filter-unit" onchange="filterQuestions()">
+              <option value="">All Units</option>
+              ${[1,2,3,4,5].map(u => `<option value="${u}">Unit ${u}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Marks</label>
+            <select id="filter-marks" onchange="filterQuestions()">
+              <option value="">All Marks</option>
+              <option value="2">2 Marks</option>
+              <option value="10">10 Marks</option>
+              <option value="12">12 Marks</option>
+            </select>
+          </div>
+          <div class="field"><label>CO</label>
+            <select id="filter-co" onchange="filterQuestions()">
+              <option value="">All COs</option>
+              ${[1,2,3,4,5,6].map(n => `<option value="CO${n}">CO${n}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="q-list"></div>
+  `;
+}
+
+function filterQuestions() {
+  const subj = document.getElementById('filter-subject')?.value;
+  const unit = document.getElementById('filter-unit')?.value;
+  const marks = document.getElementById('filter-marks')?.value;
+  const co = document.getElementById('filter-co')?.value;
+  const mySubjectIds = getMySubjects().map(s => s.id);
+  
+  let qs = DB.questions.filter(q => mySubjectIds.includes(q.subjectId));
+  if (subj) qs = qs.filter(q => q.subjectId === parseInt(subj));
+  if (unit) qs = qs.filter(q => q.unit === parseInt(unit));
+  if (marks) qs = qs.filter(q => q.marks === parseInt(marks));
+  if (co) qs = qs.filter(q => q.co === co);
+  
+  const container = document.getElementById('q-list');
+  if (!container) return;
+  
+  if (qs.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted)">No questions found. Add questions using the button above.</div>`;
+    return;
+  }
+  
+  container.innerHTML = qs.map(q => {
+    const subj = DB.subjects.find(s => s.id === q.subjectId);
+    return `
+    <div class="q-item">
+      <div class="q-item-header">
+        <div class="q-text">${q.text}</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
+          <span class="badge badge-orange" style="font-size:13px;font-weight:800">${q.marks}M</span>
+          <button class="btn btn-xs btn-danger" onclick="deleteQuestion(${q.id})">Del</button>
+        </div>
+      </div>
+      <div class="q-meta">
+        <span class="badge badge-blue">${subj ? subj.code : 'N/A'}</span>
+        <span class="badge badge-gray">Unit ${q.unit}${q.module}</span>
+        <span class="badge badge-green">${q.co}</span>
+        <span class="badge badge-purple">${q.po}</span>
+        <span class="badge badge-orange">${q.bloom}</span>
+        <span class="badge badge-gray">${q.diff}</span>
+        <span class="badge badge-gray">${q.type}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteQuestion(id) {
+  if (!confirm('Delete this question?')) return;
+  DB.questions = DB.questions.filter(q => q.id !== id);
+  filterQuestions();
+}
+
+function openQuestionModal() {
+  document.getElementById('modal-q-title').textContent = 'Add Question';
+  document.getElementById('q-text').value = '';
+  populateSubjectDropdowns();
+  openModal('modal-question');
+}
+
+function populateSubjectDropdowns() {
+  const mySubjects = getMySubjects();
+  const opts = mySubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
+  ['q-subject','gen-subject'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = `<option value="">Select Subject</option>` + opts;
+  });
+}
+
+function saveQuestion() {
+  const subjId = parseInt(document.getElementById('q-subject').value);
+  const text = document.getElementById('q-text').value.trim();
+  if (!text || !subjId) { alert('Please fill question text and select subject'); return; }
+  
+  DB.questions.push({
+    id: DB.nextId.questions++,
+    text,
+    subjectId: subjId,
+    unit: parseInt(document.getElementById('q-unit').value),
+    module: document.getElementById('q-module').value,
+    marks: parseInt(document.getElementById('q-marks').value),
+    co: document.getElementById('q-co').value,
+    po: document.getElementById('q-po').value,
+    bloom: document.getElementById('q-bloom').value,
+    diff: document.getElementById('q-diff').value,
+    type: document.getElementById('q-type').value
+  });
+  closeModal('modal-question');
+  filterQuestions();
+}
+
+// ===================================================================
+//  GENERATE PAGE
+// ===================================================================
+function pageGenerate() {
+  if (!canDo('generate')) return '<div class="alert alert-warning">Only Admin and Principal can generate question papers.</div>';
+  return `
+    <div class="section-header"><h2>Generate Question Paper</h2></div>
+    <div class="card">
+      <div class="card-header">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <h3>VTU Automated Question Paper Generator</h3>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info" style="margin-bottom:20px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Papers are generated following VTU 2021 Scheme CIE/SEE examination pattern with CO-PO tagged questions
+        </div>
+        <div class="form-row cols-2">
+          <div class="field"><label>Subject</label>
+            <select id="gen-subject">
+              <option value="">Select Subject</option>
+            </select>
+          </div>
+          <div class="field"><label>Exam Type</label>
+            <select id="gen-type">
+              <option value="CIE">CIE (Internal Assessment)</option>
+              <option value="SEE">SEE (Semester End Exam)</option>
+              <option value="MOCK">Mock / Practice Exam</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row cols-3" style="margin-top:14px">
+          <div class="field"><label>CIE Number / Term</label>
+            <select id="gen-cie">
+              <option value="CIE-1">CIE-1 (Unit 1 & 2)</option>
+              <option value="CIE-2">CIE-2 (Unit 3 & 4)</option>
+              <option value="CIE-3">CIE-3 (Unit 5)</option>
+              <option value="SEE">SEE (All Units)</option>
+            </select>
+          </div>
+          <div class="field"><label>Exam Date</label><input type="date" id="gen-date"/></div>
+          <div class="field"><label>Duration</label>
+            <select id="gen-dur">
+              <option value="1 Hour 30 Min">1 Hour 30 Min (CIE)</option>
+              <option value="2 Hours">2 Hours</option>
+              <option value="3 Hours">3 Hours (SEE)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row cols-3" style="margin-top:14px">
+          <div class="field"><label>Paper Set</label>
+            <select id="gen-set">
+              <option value="A">Set A</option>
+              <option value="B">Set B</option>
+              <option value="C">Set C (Alternate)</option>
+            </select>
+          </div>
+          <div class="field"><label>Shuffle Algorithm</label>
+            <select id="gen-shuffle">
+              <option value="full">Fisher-Yates Full Shuffle</option>
+              <option value="within-unit">Within-Unit Shuffle</option>
+              <option value="options">Question Options Only</option>
+              <option value="none">No Shuffle (Sequential)</option>
+            </select>
+          </div>
+          <div class="field"><label>Max Marks</label>
+            <select id="gen-maxmarks">
+              <option value="50">50 Marks (CIE)</option>
+              <option value="100">100 Marks (SEE)</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:16px;background:#f8f9ff;border-radius:10px;border:1px solid var(--border)">
+          <strong style="font-size:14px;color:var(--primary)">VTU CIE Pattern (50 Marks):</strong>
+          <div style="margin-top:10px;font-size:13px;color:var(--text-muted);line-height:1.8">
+            <strong>Part A</strong> — 5 Questions × 2 Marks = 10 Marks (One question from each unit)<br>
+            <strong>Part B</strong> — 5 Modules × 10 Marks = 40 Marks (Each module has Q.a OR Q.b choice)<br>
+            <em>Total: 50 Marks | Duration: 1:30 Hours</em>
+          </div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Special Instructions</label>
+          <textarea id="gen-instr" rows="2">Note: Answer any FIVE full questions, choosing ONE full question from each module. Each full question carries 10 marks.</textarea>
+        </div>
+      </div>
+      <div class="card-footer" style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-secondary btn-sm" onclick="previewPattern()">Preview Pattern</button>
+        <button class="btn btn-accent" onclick="generatePaper()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Generate Question Paper
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function previewPattern() {
+  alert('VTU CIE Pattern:\n\nPart A (10 Marks): 5 Questions × 2 marks each\n- Q1 from Unit 1\n- Q2 from Unit 2\n- Q3 from Unit 3\n- Q4 from Unit 4\n- Q5 from Unit 5\n\nPart B (40 Marks): 5 Modules × 10 marks\n- Module 1: Q6a OR Q6b (Unit 1)\n- Module 2: Q7a OR Q7b (Unit 2)\n- Module 3: Q8a OR Q8b (Unit 3)\n- Module 4: Q9a OR Q9b (Unit 4)\n- Module 5: Q10a OR Q10b (Unit 5)\n\nTotal: 50 Marks');
+}
+
+// ===================================================================
+//  GENERATE PAPER LOGIC
+// ===================================================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generatePaper() {
+  const subjId = parseInt(document.getElementById('gen-subject').value);
+  if (!subjId) { alert('Please select a subject'); return; }
+  
+  const subject = DB.subjects.find(s => s.id === subjId);
+  const examType = document.getElementById('gen-type').value;
+  const cie = document.getElementById('gen-cie').value;
+  const date = document.getElementById('gen-date').value;
+  const dur = document.getElementById('gen-dur').value;
+  const set = document.getElementById('gen-set').value;
+  const shuffleMethod = document.getElementById('gen-shuffle').value;
+  const maxMarks = document.getElementById('gen-maxmarks').value;
+  const instr = document.getElementById('gen-instr').value;
+  
+  const allQs = DB.questions.filter(q => q.subjectId === subjId);
+  
+  // Get 2-mark questions per unit
+  const partA = [];
+  for (let u = 1; u <= 5; u++) {
+    let qs = allQs.filter(q => q.unit === u && q.marks === 2);
+    if (shuffleMethod !== 'none') qs = shuffle(qs);
+    if (qs.length > 0) partA.push(qs[0]);
+  }
+  
+  // Get 10-mark questions per unit (pairs for choice)
+  const partB = [];
+  for (let u = 1; u <= 5; u++) {
+    let qs = allQs.filter(q => q.unit === u && q.marks >= 10);
+    if (shuffleMethod !== 'none') qs = shuffle(qs);
+    partB.push({ unit: u, a: qs[0] || null, b: qs[1] || null });
+  }
+  
+  const paperData = { id: DB.nextId.papers++, subject, examType, cie, date, dur, set, shuffleMethod, maxMarks, instr, partA, partB, subjectName: subject.name, title: `${subject.code} - ${subject.name}`, generatedBy: currentUser.name, generatedAt: new Date().toLocaleString() };
+  DB.papers.push(paperData);
+  
+  closeModal('modal-generate');
+  viewGeneratedPaper(paperData);
+}
+
+function viewGeneratedPaper(paper) {
+  const html = renderPaperHTML(paper);
+  document.getElementById('paper-preview-body').innerHTML = html;
+  openModal('modal-paper-view');
+}
+
+function viewPaper(id) {
+  const paper = DB.papers.find(p => p.id === id);
+  if (paper) viewGeneratedPaper(paper);
+}
+
+function renderPaperHTML(p) {
+  const institution = 'JNANA JYOTHI INSTITUTE OF TECHNOLOGY';
+  const affiliated = 'Affiliated to Visvesvaraya Technological University (VTU), Belagavi';
+  
+  let partAHtml = '';
+  if (p.partA && p.partA.length > 0) {
+    partAHtml = `<div class="qp-section">
+      <div class="qp-section-title">Part A — Answer ALL Questions &nbsp;(${p.partA.length} × 2 = ${p.partA.length * 2} Marks)</div>
+      ${p.partA.map((q, i) => q ? `
+      <div class="qp-question">
+        <span class="qp-qnum">${i+1}.</span>
+        <span class="qp-qtext">${q.text} <span class="qp-co-po">[${q.co}|${q.po}|${q.bloom}]</span></span>
+        <span class="qp-marks">[${q.marks}M]</span>
+      </div>` : '').join('')}
+    </div>`;
+  }
+  
+  let partBHtml = '';
+  if (p.partB && p.partB.length > 0) {
+    partBHtml = `<div class="qp-section">
+      <div class="qp-section-title">Part B — Answer any FIVE full questions, ONE from each Module &nbsp;(5 × 10 = 40 Marks)</div>
+      ${p.partB.map((mod, i) => `
+      <div style="margin:12px 0;border:1px solid #ddd;padding:10px;border-radius:4px">
+        <strong style="font-size:13px">Module ${i+1} (Unit ${mod.unit})</strong>
+        ${mod.a ? `<div class="qp-question">
+          <span class="qp-qnum">${i+6}a.</span>
+          <span class="qp-qtext">${mod.a.text} <span class="qp-co-po">[${mod.a.co}|${mod.a.po}|${mod.a.bloom}]</span></span>
+          <span class="qp-marks">[${mod.a.marks}M]</span>
+        </div>` : '<div style="padding:8px;color:#999;font-size:13px">No question available for Option A</div>'}
+        <div style="text-align:center;font-weight:bold;font-size:13px;padding:4px;color:#555">— OR —</div>
+        ${mod.b ? `<div class="qp-question">
+          <span class="qp-qnum">${i+6}b.</span>
+          <span class="qp-qtext">${mod.b.text} <span class="qp-co-po">[${mod.b.co}|${mod.b.po}|${mod.b.bloom}]</span></span>
+          <span class="qp-marks">[${mod.b.marks}M]</span>
+        </div>` : '<div style="padding:8px;color:#999;font-size:13px">No question available for Option B</div>'}
+      </div>`).join('')}
+    </div>`;
+  }
+  
+  return `
+    <div class="qp-container">
+      <div class="qp-header">
+        <div class="qp-uni">${institution}</div>
+        <div style="font-size:12px;margin:4px 0">${affiliated}</div>
+        <div class="qp-title">INTERNAL ASSESSMENT TEST (${p.examType})</div>
+        <div class="qp-sub">${p.cie} | Academic Year 2024-25 | Set: ${p.set}</div>
+        <div class="qp-meta">
+          <span><strong>Subject:</strong> ${p.subject.code} - ${p.subject.name}</span>
+          <span><strong>Date:</strong> ${p.date}</span>
+        </div>
+        <div class="qp-meta">
+          <span><strong>Department:</strong> ${p.subject.dept} | Sem: ${p.subject.sem}</span>
+          <span><strong>Duration:</strong> ${p.dur}</span>
+          <span><strong>Max Marks:</strong> ${p.maxMarks}</span>
+        </div>
+        <div style="font-size:12px;margin-top:8px;font-style:italic">${p.instr}</div>
+      </div>
+      ${partAHtml}
+      ${partBHtml}
+      <div style="margin-top:24px;border-top:2px solid #333;padding-top:12px;display:flex;justify-content:space-between;font-size:12px">
+        <span>Generated by: ${p.generatedBy}</span>
+        <span>Generated: ${p.generatedAt}</span>
+        <div style="text-align:right;border-top:1px solid #333;width:160px;padding-top:4px">Faculty Signature</div>
+      </div>
+    </div>
+  `;
+}
+
+function printPaper() {
+  const content = document.getElementById('paper-preview-body').innerHTML;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Question Paper</title><style>
+    body{font-family:'Times New Roman',serif;margin:20px}
+    .qp-container{max-width:800px;margin:0 auto}
+    .qp-header{text-align:center;border-bottom:3px double #333;padding-bottom:16px;margin-bottom:16px}
+    .qp-uni{font-size:14px;font-weight:bold;text-transform:uppercase;letter-spacing:2px}
+    .qp-title{font-size:18px;font-weight:bold;margin:8px 0}
+    .qp-sub{font-size:14px}
+    .qp-meta{display:flex;justify-content:space-between;font-size:13px;margin:12px 0;padding:8px 0;border-top:1px solid #333;border-bottom:1px solid #333}
+    .qp-section{margin:20px 0}
+    .qp-section-title{font-size:14px;font-weight:bold;background:#f0f0f0;padding:8px 12px;border:1px solid #ddd;text-transform:uppercase}
+    .qp-question{display:flex;gap:12px;padding:10px 0;border-bottom:1px dotted #ccc;font-size:13px;line-height:1.6}
+    .qp-qnum{font-weight:bold;min-width:30px}
+    .qp-marks{margin-left:auto;font-weight:bold;min-width:60px;text-align:right}
+    .qp-co-po{font-size:10px;color:#555}
+  </style></head><body>${content}</body></html>`);
+  w.document.close();
+  w.print();
+}
+
+// ===================================================================
+//  PAPERS PAGE
+// ===================================================================
+function pagePapers() {
+  return `
+    <div class="section-header"><h2>Question Papers Archive</h2></div>
+    <div class="card">
+      <div class="card-body">
+        ${DB.papers.length === 0 ? `<div style="text-align:center;padding:40px;color:var(--text-muted)">No papers generated yet.</div>` :
+        `<div class="table-wrap"><table>
+          <tr><th>#</th><th>Subject</th><th>Type</th><th>CIE</th><th>Date</th><th>Set</th><th>Max Marks</th><th>Generated By</th><th>Actions</th></tr>
+          ${DB.papers.map((p,i) => `
+          <tr>
+            <td>${i+1}</td>
+            <td><strong>${p.subject.code}</strong><br><span style="font-size:12px;color:var(--text-muted)">${p.subject.name}</span></td>
+            <td><span class="badge badge-blue">${p.examType}</span></td>
+            <td><span class="badge badge-orange">${p.cie}</span></td>
+            <td>${p.date}</td>
+            <td><span class="badge badge-purple">Set ${p.set}</span></td>
+            <td>${p.maxMarks}</td>
+            <td style="font-size:13px">${p.generatedBy}</td>
+            <td>
+              <button class="btn btn-xs btn-accent" onclick="viewPaper(${p.id})" style="margin-right:4px">View</button>
+              <button class="btn btn-xs btn-success" onclick="printPaperById(${p.id})">Print</button>
+            </td>
+          </tr>`).join('')}
+        </table></div>`}
+      </div>
+    </div>
+  `;
+}
+
+function printPaperById(id) {
+  const paper = DB.papers.find(p => p.id === id);
+  if (!paper) return;
+  const content = renderPaperHTML(paper);
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Question Paper</title><style>body{font-family:'Times New Roman',serif;margin:20px}.qp-container{max-width:800px;margin:0 auto}.qp-header{text-align:center;border-bottom:3px double #333;padding-bottom:16px;margin-bottom:16px}.qp-uni{font-size:14px;font-weight:bold;text-transform:uppercase;letter-spacing:2px}.qp-title{font-size:18px;font-weight:bold;margin:8px 0}.qp-sub{font-size:14px}.qp-meta{display:flex;justify-content:space-between;font-size:13px;margin:12px 0;padding:8px 0;border-top:1px solid #333;border-bottom:1px solid #333}.qp-section{margin:20px 0}.qp-section-title{font-size:14px;font-weight:bold;background:#f0f0f0;padding:8px 12px;border:1px solid #ddd;text-transform:uppercase}.qp-question{display:flex;gap:12px;padding:10px 0;border-bottom:1px dotted #ccc;font-size:13px;line-height:1.6}.qp-qnum{font-weight:bold;min-width:30px}.qp-marks{margin-left:auto;font-weight:bold;min-width:60px;text-align:right}.qp-co-po{font-size:10px;color:#555}</style></head><body>${content}</body></html>`);
+  w.document.close(); w.print();
+}
+
+// ===================================================================
+//  CO-PO PAGE
+// ===================================================================
+function pageCopo() {
+  const mySubjects = getMySubjects();
+  return `
+    <div class="section-header"><h2>CO-PO Mapping (VTU)</h2></div>
+    
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Program Outcomes (POs) — VTU / NBA Standard</h3></div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <tr><th>PO</th><th>Program Outcome</th><th>Description</th></tr>
+            ${Object.entries(VTU_INFO.pos).map(([po, desc]) => `
+            <tr>
+              <td><span class="badge badge-blue">${po}</span></td>
+              <td><strong>${desc}</strong></td>
+              <td style="font-size:13px;color:var(--text-muted)">${poDesc(po)}</td>
+            </tr>`).join('')}
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Bloom's Taxonomy Levels</h3></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+          ${[['L1','Remember','#e3f2fd','#1565c0'],['L2','Understand','#e8f5e9','#1b5e20'],['L3','Apply','#fff8e1','#f57f17'],['L4','Analyze','#fce4ec','#880e4f'],['L5','Evaluate','#f3e5f5','#4a148c'],['L6','Create','#fff3e0','#e65100']].map(([l,n,bg,c]) => `
+          <div style="background:${bg};border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:20px;font-weight:800;color:${c}">${l}</div>
+            <div style="font-size:14px;font-weight:600;color:${c};margin-top:4px">${n}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div class="card-header"><h3>CO-PO Matrix (Question Bank Analysis)</h3></div>
+      <div class="card-body">
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>Subject / CO</th>
+              ${Object.keys(VTU_INFO.pos).map(po => `<th style="text-align:center">${po}</th>`).join('')}
+            </tr>
+            ${['CO1','CO2','CO3','CO4','CO5'].map(co => `
+            <tr>
+              <td><strong>${co}</strong></td>
+              ${Object.keys(VTU_INFO.pos).map(po => {
+                const count = DB.questions.filter(q => q.co === co && q.po === po).length;
+                return `<td style="text-align:center">${count > 0 ? `<span class="badge badge-${count > 2 ? 'green' : 'orange'}">${count}</span>` : '<span style="color:#ccc">-</span>'}</td>`;
+              }).join('')}
+            </tr>`).join('')}
+          </table>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:12px">Numbers show question count per CO-PO combination. Green = 3+ questions, Orange = 1-2 questions.</p>
+      </div>
+    </div>
+  `;
+}
+
+function poDesc(po) {
+  const descs = {
+    PO1:'Apply knowledge of mathematics, science, and engineering fundamentals',
+    PO2:'Identify, formulate, review research literature, and analyze complex engineering problems',
+    PO3:'Design solutions for complex engineering problems and systems',
+    PO4:'Conduct investigations of complex problems using research-based knowledge',
+    PO5:'Create, select, and apply appropriate techniques, resources, and modern IT tools',
+    PO6:'Apply reasoning informed by the contextual knowledge to assess societal issues',
+    PO7:'Understand the impact of professional engineering solutions in societal and environmental contexts',
+    PO8:'Apply ethical principles and commit to professional ethics and responsibilities',
+    PO9:'Function effectively as an individual and as a member or leader in diverse teams',
+    PO10:'Communicate effectively on complex engineering activities with engineering community',
+    PO11:'Demonstrate knowledge and understanding of engineering and management principles',
+    PO12:'Recognize the need for, and have the preparation and ability to engage in independent and life-long learning'
+  };
+  return descs[po] || '';
+}
+
+// ===================================================================
+//  SETTINGS PAGE
+// ===================================================================
+function pageSettings() {
+  if (currentUser.role !== 'admin') return '<div class="alert alert-warning">Admin only.</div>';
+  return `
+    <div class="section-header"><h2>System Settings</h2></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div class="card">
+        <div class="card-header"><h3>Institution Details</h3></div>
+        <div class="card-body">
+          <div class="field" style="margin-bottom:12px"><label>Institution Name</label><input type="text" value="JNANA JYOTHI INSTITUTE OF TECHNOLOGY"/></div>
+          <div class="field" style="margin-bottom:12px"><label>Affiliated University</label><input type="text" value="Visvesvaraya Technological University (VTU), Belagavi"/></div>
+          <div class="field" style="margin-bottom:12px"><label>Current Scheme</label>
+            <select><option>2021 Scheme</option><option>2022 Scheme</option><option>2023 Scheme</option></select>
+          </div>
+          <div class="field"><label>Academic Year</label><input type="text" value="2024-25"/></div>
+        </div>
+        <div class="card-footer"><button class="btn btn-primary btn-sm">Save Settings</button></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Exam Configuration</h3></div>
+        <div class="card-body">
+          <div class="field" style="margin-bottom:12px"><label>CIE Max Marks</label><input type="number" value="50"/></div>
+          <div class="field" style="margin-bottom:12px"><label>SEE Max Marks</label><input type="number" value="100"/></div>
+          <div class="field" style="margin-bottom:12px"><label>Part A Questions</label><input type="number" value="5"/></div>
+          <div class="field"><label>Part B Modules</label><input type="number" value="5"/></div>
+        </div>
+        <div class="card-footer"><button class="btn btn-primary btn-sm">Save Config</button></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Departments</h3></div>
+        <div class="card-body">
+          ${['CS','IS','EC','EE','ME','CV','AI','DS'].map(d => `<span class="badge badge-blue" style="margin:4px">${d}</span>`).join('')}
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <input type="text" placeholder="New dept code" style="padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px"/>
+            <button class="btn btn-sm btn-primary">Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>System Info</h3></div>
+        <div class="card-body">
+          <table style="width:100%;font-size:13px">
+            <tr><td style="color:var(--text-muted);padding:6px 0">Total Users</td><td style="font-weight:600">${DB.users.length}</td></tr>
+            <tr><td style="color:var(--text-muted);padding:6px 0">Total Subjects</td><td style="font-weight:600">${DB.subjects.length}</td></tr>
+            <tr><td style="color:var(--text-muted);padding:6px 0">Total Questions</td><td style="font-weight:600">${DB.questions.length}</td></tr>
+            <tr><td style="color:var(--text-muted);padding:6px 0">Papers Generated</td><td style="font-weight:600">${DB.papers.length}</td></tr>
+            <tr><td style="color:var(--text-muted);padding:6px 0">System Version</td><td style="font-weight:600">QPDS v2.1.0</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===================================================================
+//  MODAL HELPERS
+// ===================================================================
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+
+// Auto filter on questions page load
+const _origAfterPage = afterPage;
+window.onload = function() {
+  // pre-fill date
+  const d = document.getElementById('gen-date');
+  if (d) d.value = new Date().toISOString().split('T')[0];
+};
+
+// Intercept showPage to run filterQuestions after render
+const origShowPage = showPage;
+</script>
+</body>
+</html>
+<script>
+// Auto-run filter on questions page
+const _origShowPage = showPage;
+window.addEventListener('DOMContentLoaded', () => {
+  // Patch filterQuestions to auto-run
+});
+
+// Override showPage to trigger filter after render
+window.showPage = function(id) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navEl = document.getElementById(`nav-${id}`);
+  if (navEl) navEl.classList.add('active');
+  const titles = { dashboard:'Dashboard', users:'User Management', roles:'Roles & Permissions', subjects:'Subject Management', questions:'Question Bank', generate:'Generate Question Paper', papers:'Question Papers', copo:'CO-PO Mapping', settings:'System Settings' };
+  document.getElementById('topbar-title').textContent = titles[id] || id;
+  const pages = { dashboard: pageDashboard, users: pageUsers, roles: pageRoles, subjects: pageSubjects, questions: pageQuestions, generate: pageGenerate, papers: pagePapers, copo: pageCopo, settings: pageSettings };
+  const fn = pages[id];
+  if (fn) document.getElementById('content').innerHTML = fn();
+  afterPage(id);
+  if (id === 'questions') setTimeout(filterQuestions, 50);
+};
+</script>

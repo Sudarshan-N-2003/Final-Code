@@ -1,0 +1,182 @@
+<?php
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/database.php';
+
+Auth::requireRole('admin');
+
+$db = Database::getInstance();
+
+// Stats
+$stats = [
+    'users'     => $db->fetchOne("SELECT COUNT(*) as c FROM users WHERE is_active=1")['c'],
+    'questions' => $db->fetchOne("SELECT COUNT(*) as c FROM questions WHERE is_active=1")['c'],
+    'papers'    => $db->fetchOne("SELECT COUNT(*) as c FROM question_papers")['c'],
+    'subjects'  => $db->fetchOne("SELECT COUNT(*) as c FROM subjects WHERE is_active=1")['c'],
+    'depts'     => $db->fetchOne("SELECT COUNT(*) as c FROM departments")['c'],
+    'pending'   => $db->fetchOne("SELECT COUNT(*) as c FROM question_papers WHERE status='pending_approval'")['c'],
+];
+
+// Recent papers
+$recentPapers = $db->fetchAll("SELECT qp.*, s.subject_name, s.subject_code, u.full_name as by_name FROM question_papers qp JOIN subjects s ON qp.subject_id=s.id JOIN users u ON qp.generated_by=u.id ORDER BY qp.created_at DESC LIMIT 8");
+
+// Role distribution
+$roleStats = $db->fetchAll("SELECT role, COUNT(*) as cnt FROM users WHERE is_active=1 GROUP BY role");
+
+// Recent activity
+$activity = $db->fetchAll("SELECT al.*, u.full_name FROM activity_logs al JOIN users u ON al.user_id=u.id ORDER BY al.created_at DESC LIMIT 10");
+
+$pageTitle = 'Admin Dashboard';
+require_once __DIR__ . '/../../includes/layout.php';
+?>
+
+<!-- FLASH MESSAGES -->
+<?php if (!empty($_GET['msg'])): ?>
+<div class="flash-msg flash-success"><i class="fas fa-check-circle"></i> <?= htmlspecialchars($_GET['msg']) ?></div>
+<?php endif; ?>
+
+<!-- STATS GRID -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dbeafe;color:#1e40af;"><i class="fas fa-users"></i></div>
+    <div>
+      <div class="stat-value" style="color:#1e40af;"><?= $stats['users'] ?></div>
+      <div class="stat-label">Total Users</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#dcfce7;color:#166534;"><i class="fas fa-circle-question"></i></div>
+    <div>
+      <div class="stat-value" style="color:#166534;"><?= $stats['questions'] ?></div>
+      <div class="stat-label">Questions</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fef3c7;color:#92400e;"><i class="fas fa-file-alt"></i></div>
+    <div>
+      <div class="stat-value" style="color:#d97706;"><?= $stats['papers'] ?></div>
+      <div class="stat-label">Papers Generated</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#ede9fe;color:#6d28d9;"><i class="fas fa-book"></i></div>
+    <div>
+      <div class="stat-value" style="color:#7c3aed;"><?= $stats['subjects'] ?></div>
+      <div class="stat-label">Subjects</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#fee2e2;color:#991b1b;"><i class="fas fa-clock"></i></div>
+    <div>
+      <div class="stat-value" style="color:#dc2626;"><?= $stats['pending'] ?></div>
+      <div class="stat-label">Pending Approval</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:#f0fdf4;color:#166534;"><i class="fas fa-building"></i></div>
+    <div>
+      <div class="stat-value" style="color:#15803d;"><?= $stats['depts'] ?></div>
+      <div class="stat-label">Departments</div>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK ACTIONS -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-title"><i class="fas fa-bolt"></i> Quick Actions</div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;">
+    <a href="users.php?action=add" class="btn btn-primary"><i class="fas fa-user-plus"></i> Add User</a>
+    <a href="../qp_generator/generate.php" class="btn btn-primary" style="background:#8b5cf6;"><i class="fas fa-file-circle-plus"></i> Generate Paper</a>
+    <a href="subjects.php?action=add" class="btn btn-primary" style="background:#f59e0b;color:#000;"><i class="fas fa-plus"></i> Add Subject</a>
+    <a href="papers.php" class="btn btn-outline"><i class="fas fa-files"></i> View All Papers</a>
+    <a href="reports.php" class="btn btn-outline"><i class="fas fa-chart-bar"></i> Reports</a>
+    <a href="settings.php" class="btn btn-outline"><i class="fas fa-gear"></i> Settings</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start;">
+
+  <!-- RECENT PAPERS -->
+  <div class="card">
+    <div class="card-title">
+      <i class="fas fa-clock-rotate-left"></i> Recent Question Papers
+      <a href="papers.php" style="margin-left:auto;font-size:12px;color:#1a4fd6;text-decoration:none;">View All →</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Paper Code</th>
+            <th>Subject</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Generated By</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($recentPapers as $p): ?>
+          <tr>
+            <td><code style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;"><?= htmlspecialchars($p['paper_code']) ?></code></td>
+            <td><?= htmlspecialchars($p['subject_code']) ?> - <?= htmlspecialchars(substr($p['subject_name'],0,25)) ?></td>
+            <td><span class="badge badge-info"><?= $p['exam_type'] ?></span></td>
+            <td>
+              <?php $statusMap = ['draft'=>'warning','pending_approval'=>'info','approved'=>'success','printed'=>'purple','archived'=>'danger'];
+                    $sc = $statusMap[$p['status']] ?? 'info'; ?>
+              <span class="badge badge-<?= $sc ?>"><?= ucfirst(str_replace('_', ' ', $p['status'])) ?></span>
+            </td>
+            <td><?= htmlspecialchars($p['by_name']) ?></td>
+            <td>
+              <a href="../qp_generator/view.php?id=<?= $p['id'] ?>" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a>
+              <a href="../qp_generator/print.php?id=<?= $p['id'] ?>" class="btn btn-outline btn-sm" target="_blank"><i class="fas fa-print"></i></a>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SIDEBAR WIDGETS -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- User Role Distribution -->
+    <div class="card">
+      <div class="card-title"><i class="fas fa-users"></i> User Roles</div>
+      <?php foreach ($roleStats as $rs): 
+        $roleIcon = ['admin'=>'fa-shield-halved','principal'=>'fa-user-tie','hod'=>'fa-chalkboard-user','staff'=>'fa-person-chalkboard'];
+        $roleCol  = ['admin'=>'#ef4444','principal'=>'#8b5cf6','hod'=>'#f59e0b','staff'=>'#10b981'];
+        $ic = $roleIcon[$rs['role']] ?? 'fa-user';
+        $co = $roleCol[$rs['role']] ?? '#64748b';
+      ?>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <i class="fas <?= $ic ?>" style="color:<?= $co ?>;width:20px;text-align:center;"></i>
+          <span style="font-size:14px;text-transform:capitalize;"><?= $rs['role'] ?></span>
+        </div>
+        <span style="font-weight:700;color:<?= $co ?>;"><?= $rs['cnt'] ?></span>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+      <div class="card-title"><i class="fas fa-scroll"></i> Recent Activity</div>
+      <?php foreach (array_slice($activity, 0, 6) as $log): ?>
+      <div style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:13px;">
+        <div style="font-weight:500;"><?= htmlspecialchars($log['full_name']) ?></div>
+        <div style="color:#64748b;">
+          <?= htmlspecialchars($log['action']) ?> · <?= htmlspecialchars($log['module']) ?>
+        </div>
+        <div style="color:#94a3b8;font-size:11px;"><?= date('d M, h:i A', strtotime($log['created_at'])) ?></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+
+  </div>
+
+</div>
+
+</div><!-- end .content -->
+</div><!-- end .main -->
+</body>
+</html>
